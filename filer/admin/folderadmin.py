@@ -118,6 +118,10 @@ class FolderAdmin(PrimitivePermissionAwareModelAdmin):
         instead of the default change_list_view
         """
         r = super(FolderAdmin, self).response_change(request, obj)
+        # this fix necessary for get assess to save object, when
+        # methods has called from the pop-up window
+        if not hasattr(r, 'location'):
+            r['Location'] = self._get_post_url(obj)
         ## Code borrowed from django ModelAdmin to determine changelist on the fly
         if r['Location']:
             # it was a successful save
@@ -244,9 +248,9 @@ class FolderAdmin(PrimitivePermissionAwareModelAdmin):
         else:
             folder = get_object_or_404(Folder, id=folder_id)
         return folder
-    
-    # custom views        
-    def directory_listing(self, request, folder_id=None, viewtype=None):   
+
+    # custom views
+    def directory_listing(self, request, folder_id=None, viewtype=None):
         request.session['filer_last_folder_id'] = folder_id
         folder = self._get_listing_folder(request, folder_id, viewtype)
         # Check actions to see if any are available on this changelist
@@ -326,7 +330,7 @@ class FolderAdmin(PrimitivePermissionAwareModelAdmin):
 
         if order_by is None or len(order_by) == 0:
             folder_files.sort()
-        
+
         items = folder_children + folder_files
         items_permissions = [(item, {'change': self.has_change_permission(request, item)}) for item in items]
         paginator = Paginator(items_permissions, FILER_PAGINATE_BY)
